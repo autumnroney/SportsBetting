@@ -1,0 +1,253 @@
+:root {
+  --bg: #f4f6f9;
+  --panel: #ffffff;
+  --panel-2: #eef1f5;
+  --text: #111827;
+  --muted: #5b6475;
+  --border: #dde2ea;
+  --accent: #1d4ed8;
+  --best-bg: #dcfce7;
+  --best-text: #065f46;
+  --best-border: #22c55e;
+  --live: #dc2626;
+  --warn-bg: #fef3c7;
+  --warn-text: #7c4a03;
+  --info-bg: #e0ecff;
+  --info-text: #1e3a8a;
+  --err-bg: #fee2e2;
+  --err-text: #991b1b;
+  --up: #059669;
+  --down: #dc2626;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1f2630;
+    --text: #e6edf3;
+    --muted: #9aa4b2;
+    --border: #2b3441;
+    --accent: #60a5fa;
+    --best-bg: #0f3d2a;
+    --best-text: #6ee7b7;
+    --best-border: #10b981;
+    --live: #f87171;
+    --warn-bg: #3d2f06;
+    --warn-text: #fcd34d;
+    --info-bg: #13244a;
+    --info-text: #bfdbfe;
+    --err-bg: #3f1414;
+    --err-text: #fecaca;
+    --up: #34d399;
+    --down: #f87171;
+    --shadow: none;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); }
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---------- header ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { font-size: 28px; }
+h1 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+.tagline { margin: 0; color: var(--muted); font-size: 13px; }
+
+.status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.ok { background: var(--up); box-shadow: 0 0 0 3px color-mix(in srgb, var(--up) 25%, transparent); }
+.dot.warn { background: #f59e0b; }
+.dot.bad { background: var(--down); }
+.icon-btn {
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+  border-radius: 8px; width: 32px; height: 32px; font-size: 16px; cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--accent); }
+
+/* ---------- banners ---------- */
+#banners { margin-top: 14px; display: grid; gap: 8px; }
+#banners:empty { display: none; }
+.banner { padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+.banner.warn { background: var(--warn-bg); color: var(--warn-text); }
+.banner.info { background: var(--info-bg); color: var(--info-text); }
+.banner.error { background: var(--err-bg); color: var(--err-text); }
+
+/* ---------- controls ---------- */
+.controls {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin: 16px 0 10px;
+}
+.segmented {
+  display: inline-flex; background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 3px;
+}
+.segmented button {
+  border: 0; background: transparent; color: var(--muted);
+  padding: 7px 12px; border-radius: 7px; font: inherit; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.segmented button.active { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+.count {
+  font-size: 11px; background: var(--border); color: var(--text);
+  border-radius: 999px; padding: 1px 7px; font-variant-numeric: tabular-nums;
+}
+[data-view="live"].active .count { background: var(--live); color: #fff; }
+
+.search { flex: 1 1 180px; }
+.search input, .stake input, .interval select {
+  font: inherit; color: var(--text); background: var(--panel);
+  border: 1px solid var(--border); border-radius: 9px; padding: 7px 10px;
+}
+.search input { width: 100%; }
+.stake, .interval { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+.stake input { width: 80px; }
+
+.books-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.books-label { color: var(--muted); font-size: 14px; }
+.book-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.book-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+  padding: 4px 12px 4px 8px; font-size: 14px; cursor: pointer;
+}
+.book-toggle.disabled { opacity: 0.5; cursor: not-allowed; }
+
+.howto {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 14px; font-size: 14px;
+}
+.howto summary { cursor: pointer; font-weight: 600; }
+.howto ul { margin: 8px 0 2px; padding-left: 20px; color: var(--muted); }
+.howto li { margin: 4px 0; }
+.best-inline { color: var(--best-text); background: var(--best-bg); padding: 0 5px; border-radius: 4px; }
+
+/* ---------- games ---------- */
+.games {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr));
+  margin-bottom: 24px;
+}
+.game {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 14px; min-width: 0;
+}
+.game.is-live { border-left: 4px solid var(--live); }
+
+.game-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.teams { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.team { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 16px; }
+.team .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team .at { color: var(--muted); font-weight: 400; }
+.score { font-variant-numeric: tabular-nums; font-size: 18px; min-width: 2ch; text-align: right; }
+.game-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--live); font-weight: 800; font-size: 12px; letter-spacing: 0.06em;
+}
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--live); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.clock { font-variant-numeric: tabular-nums; }
+
+.picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.pick {
+  display: grid; gap: 2px; text-decoration: none; color: var(--text);
+  background: var(--best-bg); border: 1px solid var(--best-border); border-radius: 10px;
+  padding: 8px 10px; min-width: 0;
+}
+.pick:hover { filter: brightness(0.97); }
+.pick.none { background: var(--panel-2); border-color: var(--border); color: var(--muted); font-size: 13px; }
+.pick-side { font-weight: 700; overflow-wrap: anywhere; }
+.pick-side .px, .pick-side .pt { white-space: nowrap; }
+.pick-side .px { color: var(--best-text); }
+.pick-book, .pick-win { font-size: 13px; color: var(--muted); }
+.pick-book strong { color: var(--best-text); }
+.value { font-size: 12px; font-weight: 700; }
+.value.pos { color: var(--up); }
+.value.neg { color: var(--muted); }
+
+.table-scroll { overflow-x: auto; }
+.odds { width: 100%; border-collapse: separate; border-spacing: 4px; font-variant-numeric: tabular-nums; }
+.odds th { font-size: 12px; color: var(--muted); font-weight: 600; text-align: center; padding: 2px 4px; white-space: nowrap; }
+.odds th[scope="row"] {
+  text-align: left; color: var(--text); font-size: 13px;
+  max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+}
+.odds th.off { text-decoration: line-through; opacity: 0.6; }
+.odds td { text-align: center; padding: 0; }
+.odds td a {
+  display: block; padding: 8px 4px; border-radius: 8px; text-decoration: none;
+  color: var(--text); background: var(--panel-2); border: 1px solid transparent;
+  font-weight: 600; white-space: nowrap; position: relative;
+}
+.odds td a:hover { border-color: var(--accent); }
+.odds td .pt { color: var(--muted); font-weight: 500; }
+.odds td.best a { background: var(--best-bg); border-color: var(--best-border); color: var(--best-text); }
+.odds td.best .pt { color: var(--best-text); }
+.odds td.off a { opacity: 0.45; }
+.odds td.stale a { opacity: 0.5; border-style: dashed; border-color: var(--border); }
+.odds td.na { color: var(--muted); font-size: 13px; background: var(--panel-2); border-radius: 8px; padding: 8px 4px; opacity: 0.6; }
+.arrow { font-size: 10px; margin-left: 3px; }
+.odds td.up .arrow { color: var(--up); }
+.odds td.down .arrow { color: var(--down); }
+.odds td.up a { animation: flash-up 1.2s ease-out; }
+.odds td.down a { animation: flash-down 1.2s ease-out; }
+@keyframes flash-up { from { box-shadow: 0 0 0 3px var(--up); } to { box-shadow: 0 0 0 0 transparent; } }
+@keyframes flash-down { from { box-shadow: 0 0 0 3px var(--down); } to { box-shadow: 0 0 0 0 transparent; } }
+
+.empty {
+  text-align: center; color: var(--muted); padding: 40px 16px;
+  background: var(--panel); border: 1px dashed var(--border); border-radius: var(--radius);
+}
+
+.footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; padding: 16px 0 28px; }
+.footer p { margin: 6px 0; }
+
+@media (max-width: 560px) {
+  .tagline { display: none; }
+  h1 { font-size: 17px; }
+  .status { width: 100%; justify-content: space-between; }
+  .controls .segmented { flex: 1 1 100%; }
+  .controls .segmented button { flex: 1; justify-content: center; }
+  .picks { grid-template-columns: 1fr; }
+  .odds { border-spacing: 3px; }
+  .odds th { font-size: 11px; padding: 2px 1px; }
+  .odds th[scope="row"] { max-width: 72px; font-size: 12px; }
+  .odds td a { padding: 6px 1px; font-size: 13px; }
+  .odds td .pt { display: block; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse, .odds td a { animation: none !important; }
+}
