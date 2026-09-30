@@ -316,25 +316,55 @@ export class ProviderError extends Error {
   }
 }
 
+// The Odds API issues 32-character hex keys; SportsGameOdds keys look different.
+export function detectKeyProvider(key) {
+  return /^[a-f0-9]{32}$/i.test(String(key || "").trim()) ? "theoddsapi" : "sportsgameodds";
+}
+
+// Returns { provider, key }. A generic ODDS_API_KEY is routed to the right feed
+// by its format, so only one Netlify variable is needed.
+export function resolveProvider(env) {
+  const keys = {
+    sportsgameodds: env.SPORTSGAMEODDS_API_KEY?.trim(),
+    theoddsapi: env.THE_ODDS_API_KEY?.trim(),
+  };
+  const generic = env.ODDS_API_KEY?.trim();
+  if (generic) keys[detectKeyProvider(generic)] ||= generic;
+
+  const forced = (env.ODDS_PROVIDER || "").trim().toLowerCase();
+  if (forced === "demo") return { provider: "demo", key: null };
+  if (keys[forced]) return { provider: forced, key: keys[forced] };
+  if (keys.sportsgameodds) return { provider: "sportsgameodds", key: keys.sportsgameodds };
+  if (keys.theoddsapi) return { provider: "theoddsapi", key: keys.theoddsapi };
+  return { provider: "demo", key: null };
+}
+
 export function pickProvider(env) {
-  const forced = (env.ODDS_PROVIDER || "").toLowerCase();
-  if (forced === "demo") return "demo";
-  if (forced === "sportsgameodds" && env.SPORTSGAMEODDS_API_KEY) return "sportsgameodds";
-  if (forced === "theoddsapi" && env.THE_ODDS_API_KEY) return "theoddsapi";
-  if (env.SPORTSGAMEODDS_API_KEY) return "sportsgameodds";
-  if (env.THE_ODDS_API_KEY) return "theoddsapi";
-  return "demo";
+  return resolveProvider(env).provider;
+}
+
+function booksSeen(games) {
+  const seen = new Set();
+  for (const g of games)
+    for (const sides of Object.values(g.markets))
+      for (const quotes of Object.values(sides)) for (const book of Object.keys(quotes)) seen.add(book);
+  return seen;
 }
 
 export async function loadOdds(env) {
-  const provider = pickProvider(env);
+  const { provider, key } = resolveProvider(env);
   let result;
-  if (provider === "sportsgameodds") result = await fetchSportsGameOdds(env.SPORTSGAMEODDS_API_KEY);
-  else if (provider === "theoddsapi") result = await fetchOddsApi(env.THE_ODDS_API_KEY);
+  if (provider === "sportsgameodds") result = await fetchSportsGameOdds(key);
+  else if (provider === "theoddsapi") result = await fetchOddsApi(key);
   else result = { games: demoGames(), quota: null };
 
-  const covered =
-    provider === "theoddsapi" ? ["fanduel", "draftkings", "caesars"] : BOOKS.map((b) => b.key);
+  let covered = BOOKS.map((b) => b.key);
+  if (provider === "theoddsapi") {
+    // bet365 isn't offered by this feed; Caesars only comes through on paid
+    // plans, so treat it as covered only when it actually shows up.
+    covered = ["fanduel", "draftkings"];
+    if (!result.games.length || booksSeen(result.games).has("caesars")) covered.push("caesars");
+  }
   result.games.sort((a, b) => {
     if (a.status.live !== b.status.live) return a.status.live ? -1 : 1;
     return Date.parse(a.commence || 0) - Date.parse(b.commence || 0);

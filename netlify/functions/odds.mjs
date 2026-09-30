@@ -27,8 +27,14 @@ export default async () => {
     if (cached && cached.provider === provider) {
       return Response.json({ ...cached.data, stale: true, error: err.message }, { headers: { "Cache-Control": "no-store" } });
     }
+    const hint =
+      err.status === 401 || err.status === 403
+        ? " (the key was rejected or its monthly credits are used up; check the ODDS_API_KEY value in Netlify and your plan's usage)"
+        : err.status === 429
+          ? " (too many requests; raise ODDS_CACHE_SECONDS in Netlify)"
+          : "";
     return Response.json(
-      { error: err.message, provider },
+      { error: err.message + hint, provider },
       { status: err.status === 401 || err.status === 403 ? 502 : 503, headers: { "Cache-Control": "no-store" } }
     );
   }

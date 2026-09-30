@@ -232,13 +232,19 @@ function renderBanners() {
   const d = state.data;
   const out = [];
   if (d?.demo) {
-    out.push(`<div class="banner warn"><strong>Demo mode: these odds are simulated, not real.</strong> Add an odds API key in Netlify (see README) to show real live FanDuel, DraftKings, Caesars and bet365 prices.</div>`);
+    out.push(`<div class="banner warn"><strong>Demo mode: these odds are simulated, not real.</strong> Add your key as the ODDS_API_KEY environment variable in Netlify and redeploy to show real live odds (see README).</div>`);
   }
   if (d && !d.demo) {
     const missing = d.books.filter((b) => !b.covered).map((b) => b.name);
     if (missing.length) {
-      out.push(`<div class="banner info">${esc(missing.join(", "))} isn't available from the current odds feed. Switch to the SportsGameOdds feed to include it (see README).</div>`);
+      const why = [];
+      if (missing.includes("Caesars")) why.push("Caesars needs a paid The Odds API plan");
+      if (missing.includes("bet365")) why.push("bet365 needs a SportsGameOdds key");
+      out.push(`<div class="banner info">Not included with the current odds plan: ${esc(missing.join(" and "))}. ${esc(why.join("; "))} (see README).</div>`);
     }
+  }
+  if (d?.quota && Number.isFinite(d.quota.remaining) && d.quota.remaining < 100) {
+    out.push(`<div class="banner warn">Only ${esc(d.quota.remaining)} odds API credits left this month. Odds will stop updating when they run out. Upgrade the plan or raise ODDS_CACHE_SECONDS in Netlify.</div>`);
   }
   if (state.error) out.push(`<div class="banner error">⚠ ${esc(state.error)}. Retrying automatically…</div>`);
   $("banners").innerHTML = out.join("");

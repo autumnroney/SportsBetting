@@ -6,6 +6,7 @@ import {
   demoGames,
   parseAmerican,
   pickProvider,
+  resolveProvider,
 } from "../netlify/lib/providers.mjs";
 import { bestQuote, fairProbabilities, profit, expectedValue } from "../public/odds-math.js";
 
@@ -147,4 +148,11 @@ test("provider selection prefers SportsGameOdds (has bet365), falls back to demo
   assert.equal(pickProvider({ THE_ODDS_API_KEY: "a" }), "theoddsapi");
   assert.equal(pickProvider({ THE_ODDS_API_KEY: "a", SPORTSGAMEODDS_API_KEY: "b" }), "sportsgameodds");
   assert.equal(pickProvider({ ODDS_PROVIDER: "theoddsapi", THE_ODDS_API_KEY: "a", SPORTSGAMEODDS_API_KEY: "b" }), "theoddsapi");
+});
+
+test("a generic ODDS_API_KEY is routed to the right feed by its format", () => {
+  const oddsApiKey = "0123456789abcdef0123456789abcdef";
+  assert.deepEqual(resolveProvider({ ODDS_API_KEY: oddsApiKey }), { provider: "theoddsapi", key: oddsApiKey });
+  assert.equal(resolveProvider({ ODDS_API_KEY: "sgo_live_abc123" }).provider, "sportsgameodds");
+  assert.equal(resolveProvider({ ODDS_API_KEY: ` ${oddsApiKey}\n` }).key, oddsApiKey, "whitespace from pasting is trimmed");
 });
