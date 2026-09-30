@@ -44,15 +44,28 @@ Advanced: `THE_ODDS_API_KEY` and `SPORTSGAMEODDS_API_KEY` still work if you want
 
 ### Keeping API costs under control
 
-Every visitor's browser calls `/api/odds`, but the function reuses one response for `ODDS_CACHE_SECONDS` (via Netlify's CDN cache and an in-memory cache). API usage therefore depends on that setting, not on how many people are on the site. Rough numbers for a 3.5-hour game window:
+Every visitor's browser calls `/api/odds`, but they all share one cached snapshot. Netlify's CDN cache is shared across regions (`durable`), and the function keeps one in memory too. API usage depends on the settings below, not on how many people visit:
 
-- **The Odds API:** each refresh costs 4 credits (3 markets + live scores). Credits are only used while someone has the page open.
-  - Free plan (500 credits/month): about 125 refreshes. At the default 20s that's roughly **40 minutes** of live viewing a month; at `ODDS_CACHE_SECONDS=60` it's about 2 hours.
-  - 20K plan: about 5,000 refreshes, or roughly 28 hours at 20s.
-  - The page warns when fewer than 100 credits are left.
-- **SportsGameOdds:** usage is counted per event returned.
+| Variable | Default | What it does |
+|---|---|---|
+| `ODDS_CACHE_SECONDS` | `60` (min 15) | How often odds are re-fetched **while a game is live** |
+| `ODDS_IDLE_CACHE_SECONDS` | `3600` | How often odds are re-fetched when nothing is live. It always wakes up in time for the next kickoff. |
 
-Raise `ODDS_CACHE_SECONDS` if you're burning through your plan.
+Built-in savings:
+- No credits are used unless someone has the page open.
+- Live scores are only requested while a game is in progress.
+- After an error (bad key, credits used up, rate limit), the site waits 30s–5min before trying again. Meanwhile it keeps showing the last good odds with a warning.
+- When fewer than 10% of the month's credits are left, refreshes slow to every 5 minutes. Under 10 credits left, they slow to every 30 minutes.
+
+**The Odds API** charges 3 credits per refresh (moneyline + spread + total), plus 1 for scores during live games.
+
+| Plan | Credits/month | Realistic `ODDS_CACHE_SECONDS` | Live updates |
+|---|---|---|---|
+| Free | 500 | `900`+ | Roughly every 15 min on one Saturday a month. **Fine for testing, not real live betting.** |
+| 20K ($30) | 20,000 | `60` (default) | About 1-min updates through full college football Saturdays |
+| 100K ($59) | 100,000 | `15`–`20` | Near-real-time |
+
+The page's own refresh setting (15/30/60s, default 30s) costs nothing. The browser just picks up the latest shared snapshot.
 
 ## Run locally
 

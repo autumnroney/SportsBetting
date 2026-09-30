@@ -47,6 +47,11 @@ function parsePoint(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+// Only https links, and not templated ones (some feeds return "{state}" placeholders).
+export function safeLink(url) {
+  return typeof url === "string" && url.startsWith("https://") && !/[{}]/.test(url) ? url : null;
+}
+
 function toNumber(value) {
   const n = Number(value);
   return value === null || value === undefined || value === "" || !Number.isFinite(n) ? null : n;
@@ -86,7 +91,7 @@ export function normalizeSportsGameOdds(events, now = Date.now()) {
           price,
           point,
           updated: q.lastUpdatedAt || null,
-          link: typeof q.deeplink === "string" && q.deeplink.startsWith("https://") ? q.deeplink : null,
+          link: safeLink(q.deeplink),
         };
       }
     }
@@ -173,7 +178,7 @@ export function normalizeOddsApi(events, scores, now = Date.now()) {
             price,
             point,
             updated: m.last_update || bm.last_update || null,
-            link: typeof (m.link || bm.link) === "string" && (m.link || bm.link).startsWith("https://") ? m.link || bm.link : null,
+            link: safeLink(m.link || bm.link),
           };
         }
       }
@@ -201,7 +206,14 @@ export function normalizeOddsApi(events, scores, now = Date.now()) {
   return games;
 }
 
-async function fetchOddsApi(apiKey) {
+function readQuota(res) {
+  const remaining = res?.headers.get("x-requests-remaining");
+  const used = res?.headers.get("x-requests-used");
+  if (remaining === null || remaining === undefined) return null;
+  return { remaining: Number(remaining), used: used === null ? null : Number(used) };
+}
+
+async function fetchOddsApi(apiKey, now = Date.now()) {
   const base = "https://api.the-odds-api.com/v4/sports/americanfootball_ncaaf";
   const oddsParams = new URLSearchParams({
     apiKey,
@@ -210,22 +222,23 @@ async function fetchOddsApi(apiKey) {
     oddsFormat: "american",
     includeLinks: "true",
   });
-  const [oddsRes, scoresRes] = await Promise.all([
-    fetch(`${base}/odds?${oddsParams}`),
-    fetch(`${base}/scores?${new URLSearchParams({ apiKey })}`),
-  ]);
+  const oddsRes = await fetch(`${base}/odds?${oddsParams}`);
   if (!oddsRes.ok) {
     const body = await oddsRes.json().catch(() => ({}));
     throw new ProviderError(`The Odds API error ${oddsRes.status}: ${body.message || oddsRes.statusText}`, oddsRes.status);
   }
   const events = await oddsRes.json();
-  // Scores are a nice-to-have; odds still render if this call fails.
-  const scores = scoresRes.ok ? await scoresRes.json().catch(() => []) : [];
-  const remaining = scoresRes.headers.get("x-requests-remaining") ?? oddsRes.headers.get("x-requests-remaining");
-  return {
-    games: normalizeOddsApi(events, scores),
-    quota: remaining !== null ? { remaining: Number(remaining) } : null,
-  };
+  let quota = readQuota(oddsRes);
+
+  // Scores cost a credit, so only ask for them while a game is in progress.
+  let scores = [];
+  if (events.some((e) => Date.parse(e.commence_time) <= now)) {
+    const scoresRes = await fetch(`${base}/scores?${new URLSearchParams({ apiKey })}`).catch(() => null);
+    // Scores are a nice-to-have; odds still render if this call fails.
+    if (scoresRes?.ok) scores = await scoresRes.json().catch(() => []);
+    quota = readQuota(scoresRes) || quota;
+  }
+  return { games: normalizeOddsApi(events, scores, now), quota };
 }
 
 // ---------------------------------------------------------------------------
@@ -369,9 +382,13 @@ export async function loadOdds(env) {
     if (a.status.live !== b.status.live) return a.status.live ? -1 : 1;
     return Date.parse(a.commence || 0) - Date.parse(b.commence || 0);
   });
+  const now = Date.now();
+  const upcoming = result.games.map((g) => Date.parse(g.commence)).filter((t) => t > now);
   return {
     provider,
     demo: provider === "demo",
+    anyLive: result.games.some((g) => g.status.live),
+    nextKickoff: upcoming.length ? new Date(Math.min(...upcoming)).toISOString() : null,
     fetchedAt: new Date().toISOString(),
     books: BOOKS.map((b) => ({ ...b, covered: covered.includes(b.key) })),
     quota: result.quota,

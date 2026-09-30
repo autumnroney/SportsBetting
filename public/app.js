@@ -23,7 +23,7 @@ const state = {
   market: "moneyline",
   search: "",
   stake: 100,
-  intervalSec: 20,
+  intervalSec: 30,
   enabledBooks: new Set(),
   lastFetch: 0,
   fetching: false,
@@ -267,7 +267,9 @@ function renderStatus() {
   const next = Math.max(0, Math.ceil((state.lastFetch + state.intervalSec * 1000 - Date.now()) / 1000));
   text.textContent = state.fetching
     ? "Updating…"
-    : `Odds from ${age < 5 ? "just now" : `${age}s ago`} · next update in ${document.hidden ? "—" : `${next}s`}`;
+    : `Odds from ${age < 5 ? "just now" : age < 120 ? `${age}s ago` : `${Math.round(age / 60)}m ago`} · checking again in ${document.hidden ? "—" : `${next}s`}`;
+  const src = state.data.refreshSeconds;
+  text.title = src ? `The odds source is refreshed every ${src >= 120 ? `${Math.round(src / 60)} min` : `${src}s`} (more often while games are live)` : "";
   dot.className = `dot ${state.error ? "bad" : state.data.demo ? "warn" : "ok"}`;
 }
 
@@ -330,7 +332,7 @@ function bindSegmented(attr, key, persistKey) {
 function init() {
   state.market = load("market", "moneyline");
   state.stake = Number(load("stake", 100)) || 100;
-  state.intervalSec = Number(load("interval", 20)) || 20;
+  state.intervalSec = [15, 30, 60].includes(Number(load("interval", 30))) ? Number(load("interval", 30)) : 30;
   $("stake").value = state.stake;
   $("interval").value = String(state.intervalSec);
 
